@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<head>
+	<title>Alan's Item Catalog</title>
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Lato:100,200,300,400" rel="stylesheet">
+	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
+</head>
+<body>
+	<h1>All the Catagory</h2>
+	{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+        <p style="color: red">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+	{% for i in catalog %}
+	<div class="catagory">
+	    <h1>{{ i['name'] }}</h1>
+	    <a href="{{url_for('New_item', catalog_id = i['id'])}}">Add New item</a>
+	    <br/>
+	    <a href="{{url_for('Edit_catalog', catalog_id = i['id'])}}">edit</a>
+	    <a href="{{url_for('Delete_catalog', catalog_id = i['id'])}}">delete</a>
+
+	  	{% for j in i['items'] %}
+	    <div class="items">
+	        <h2 class="item_name">{{ j.name }}</h2>
+	    	<ul class="item">
+	            <li class="title">Attribute:</li>
+	            <li>{{ j.attribute }}</li>
+	            <li class="title">Description:</li>
+	            <li>{{ j.description }}</li>
+	            <li class="title">Link:</li>
+	            <li>{{ j.url_link }}</li>
+	    	</ul>
+	    	<a class="button" href="{{url_for('Edit_item', catalog_id = i['id'], item_id=j.Id)}}" >edit</a>
+	        <a class="button" href="{{url_for('Delete_item', catalog_id = i['id'], item_id=j.Id)}}">delete</a>
+	    </div>
+	    <br/>
+	    {% endfor %}
+	    <br/>
+	</div>
+	{% endfor %}
+</body>

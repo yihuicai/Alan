@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<head>
+	<title>Alan's Item Catalog</title>
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Lato:100,200,300,400" rel="stylesheet">
+	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
+</head>
+<body>
+	<h2>Edit item</h2>
+	<form action="{{url_for('Edit_item', catalog_id=catalog_id, item_id=item.Id)}}" method = 'POST'>
+	    <p>Name:</p>
+	    <input type='text' size='30' name='name' value="{{ item.name }}">
+	    <p>Attribute:</p>
+	    <input type='text' size='30' name='attribute' value="{{ item.attribute }}">
+	    <p>Description:</p>
+	    <input type='text' size='30' name='description' value="{{ item.description }}">
+	    <p>URL:</p>
+	    <input type='text' size='30' name='url' value="{{ item.url_link }}">
+	    <input type='submit' value='Create'>
+	</form>
+</body>

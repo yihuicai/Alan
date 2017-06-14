@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<head>
+	<title>Alan's Item Catalog</title>
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Lato:100,200,300,400" rel="stylesheet">
+	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
+</head>
+<body>
+	<h2>Are you sure to delete {{catagory.name}} ?</h2>
+	<div class="delete" style="width: 100%; display: flex;">
+	    <form action="{{url_for('Delete_catalog',catalog_id=catagory.Id)}}" method = 'POST'>
+	        <input type='submit' value='Yes'>
+	    </form>
+    	<form action="{{url_for('All_catalog')}}" method = 'GET'>
+	        <input type='submit' value='No'>
+    	</form>
+	</div>
+</body>
