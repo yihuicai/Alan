@@ -64,6 +64,9 @@ def Edit_catalog(catalog_id):
             flash("Catagory modified!")
             session.commit()
             return redirect(url_for('This_catalog', catalog_id=catalog_id))
+        else:
+            flash("Please give a name to edit the catagory.")
+            return render_template('edit_catalog.html',catagory=catagory)
     
 @app.route('/catalog/<int:catalog_id>/delete', methods=['GET','POST'])
 def Delete_catalog(catalog_id):
@@ -107,7 +110,10 @@ def Edit_item(catalog_id, item_id):
             session.add(item)
             flash("An item has been edited!")
             session.commit()
-        return redirect(url_for('This_catalog', catalog_id=catalog_id))
+            return redirect(url_for('This_catalog', catalog_id=catalog_id))
+        else:
+            flash("Please give a name to the edited item.")
+            return render_template('edit_item.html', catalog_id=catalog_id, item=item)
             
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/delete',  methods=['GET','POST'])
 def Delete_item(catalog_id, item_id):
