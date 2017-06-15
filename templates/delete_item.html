@@ -8,10 +8,10 @@
 <body>
     <header>
         <h4 class="logo">Alan's Catalog</h4>
-
+	    <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
+        <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
 	</header>    
-	<a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
-    <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
+
 	{% with messages = get_flashed_messages() %}
     {% if messages %}
     {% for message in messages %}
