@@ -6,7 +6,22 @@
 	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
 </head>
 <body>
-	<h2>Are you sure to delete {{catagory.name}} ?</h2>
+    <header>
+        <h4 class="logo">Alan's Catalog</h4>
+        <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
+        <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
+	</header>    
+	
+	{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+        <p class="flash">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="top">
+	<h2 class="title">Are you sure to delete {{catagory.name}} ?</h2>
 	<div class="delete" style="width: 100%; display: flex;">
 	    <form action="{{url_for('Delete_catalog',catalog_id=catagory.Id)}}" method = 'POST'>
 	        <input type='submit' value='Yes'>
@@ -14,5 +29,6 @@
     	<form action="{{url_for('All_catalog')}}" method = 'GET'>
 	        <input type='submit' value='No'>
     	</form>
+	</div>
 	</div>
 </body>

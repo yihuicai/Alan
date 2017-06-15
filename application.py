@@ -42,11 +42,15 @@ def New_catalog():
     if request.method == 'GET':
         return render_template('new_catalog.html')
     else:
-        newCatagory=Catagory(name=request.form['name'])
-        session.add(newCatagory)
-        flash("New catagory created!")
-        session.commit()
-        return redirect(url_for('All_catalog'))
+        if request.form['name']:
+            newCatagory=Catagory(name=request.form['name'])
+            session.add(newCatagory)
+            flash("New catagory created!")
+            session.commit()
+            return redirect(url_for('All_catalog'))
+        else:
+            flash("Please give a name for catagory")
+            return render_template('new_catalog.html')
 
 @app.route('/catalog/<int:catalog_id>/edit', methods=['Get', 'Post'])
 def Edit_catalog(catalog_id):
@@ -78,12 +82,16 @@ def New_item(catalog_id):
     if request.method == 'GET':
         return render_template('new_item.html', catalog_id=catalog_id)
     else:
-        newItem=Item(name=request.form['name'], attribute=request.form['attribute'],
-                     description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id)
-        session.add(newItem)
-        flash("An item has been created!")
-        session.commit()
-        return redirect(url_for('This_catalog', catalog_id=catalog_id))
+        if request.form['name']:
+            newItem=Item(name=request.form['name'], attribute=request.form['attribute'],
+            description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id)
+            session.add(newItem)
+            flash("An item has been created!")
+            session.commit()
+            return redirect(url_for('This_catalog', catalog_id=catalog_id))
+        else:
+            flash("Please give a name for item")
+            return redirect(url_for('All_catalog'))
         
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit',  methods=['GET','POST'])
 def Edit_item(catalog_id, item_id):
