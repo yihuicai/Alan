@@ -6,40 +6,45 @@
 	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
 </head>
 <body>
-	<h1>All the Catagory</h2>
+    <header>
+        <h4 class="logo">Alan's Catalog</h4>
+
+	</header>
+	<a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
+    <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
 	{% with messages = get_flashed_messages() %}
     {% if messages %}
     {% for message in messages %}
-        <p style="color: red">{{ message }}</p>
+        <p class="flash">{{ message }}</p>
     {% endfor %}
     {% endif %}
     {% endwith %}
 
+
+    <div class="catagories top">
 	{% for i in catalog %}
 	<div class="catagory">
-	    <h1>{{ i['name'] }}</h1>
+	    <h1 class="title">{{ i['name'] }}</h1>
 	    <a href="{{url_for('New_item', catalog_id = i['id'])}}">Add New item</a>
+	    <br/>
 	    <br/>
 	    <a href="{{url_for('Edit_catalog', catalog_id = i['id'])}}">edit</a>
 	    <a href="{{url_for('Delete_catalog', catalog_id = i['id'])}}">delete</a>
-
+	    <br/>
+	    <br/>
 	  	{% for j in i['items'] %}
-	    <div class="items">
-	        <h2 class="item_name">{{ j.name }}</h2>
-	    	<ul class="item">
-	            <li class="title">Attribute:</li>
-	            <li>{{ j.attribute }}</li>
-	            <li class="title">Description:</li>
-	            <li>{{ j.description }}</li>
-	            <li class="title">Link:</li>
-	            <li>{{ j.url_link }}</li>
-	    	</ul>
-	    	<a class="button" href="{{url_for('Edit_item', catalog_id = i['id'], item_id=j.Id)}}" >edit</a>
+	    <div class="items"" style="background: url({{j.url_link}}) no-repeat center center">
+	        <h3 class="item_name">{{ j.name }}</h3>	    
+	        <a class="button" href="{{url_for('Edit_item', catalog_id = i['id'], item_id=j.Id)}}" >edit</a>
 	        <a class="button" href="{{url_for('Delete_item', catalog_id = i['id'], item_id=j.Id)}}">delete</a>
 	    </div>
+
 	    <br/>
 	    {% endfor %}
 	    <br/>
 	</div>
 	{% endfor %}
+	<br/>
+	</div>
+
 </body>
