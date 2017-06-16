@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<head>
+	<title>Alan's Item Catalog</title>
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Lato:100,200,300,400" rel="stylesheet">
+	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
+</head>
+<body>
+    <header>
+        <h4 class="logo">Alan's Catalog</h4>
+        <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
+        <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
+	</header>
+	
+	{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+        <p class="flash">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <div class="top">
+	    <div class="catagory">
+	        <h2 class="title t2">Name: {{ item.name }}</h2>
+	        <img src="{{ item.url_link }}" class="item_img"/>
+	    </div>
+	    
+	    <div class="item">
+	        <div class="title">Catagory:  {{ catalog['name'] }}</div>
+	        <div class="title">Attribute:   {{ item.attribute }}</div>
+	        <div class="title">Description:   {{ item.description }}</div>
+	        <br/>
+	        <br/>
+	    </div>
+	    <br/>
+	</div>
+
+
+</body>

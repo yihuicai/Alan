@@ -22,6 +22,7 @@
 
 
     <div class="catagories top">
+    <div class="latest_items"></div>
 	{% for i in catalog %}
 	<div class="catagory">
 	    <h1 class="title">{{ i['name'] }}</h1>
@@ -34,8 +35,9 @@
 	    <br/>
 	  	{% for j in i['items'] %}
 	    <div class="items">
-	        <h3 class="item_name">{{ j.name }}</h3>	    
-	        <a class="button" href="{{url_for('Edit_item', catalog_id = i['id'], item_id=j.Id)}}" >edit</a>
+	        <a href="{{url_for('Items', catalog_id = i['id'], item_id=j.Id)}}"><h3 class="item_name">
+	        {{ j.name }}</h3></a>	    
+	        <a class="button" href="{{url_for('Edit_item', catalog_id = i['id'], item_id=j.Id)}}">edit</a>
 	        <a class="button" href="{{url_for('Delete_item', catalog_id = i['id'], item_id=j.Id)}}">delete</a>
 	    </div>
 
