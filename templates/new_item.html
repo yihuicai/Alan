@@ -20,8 +20,8 @@
     {% endif %}
     {% endwith %}
 
-    <div class="top">
-	<h2 class="title">Add new catagory</h2>
+    <div class="top catagory">
+	<h2 class="title center">Add new catagory</h2>
 	<form action="{{url_for('New_item',catalog_id=catalog_id)}}" method = 'POST'>
 	    <p>Name:</p>
 	    <input type='text' size='30' name='name'>
