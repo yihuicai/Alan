@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask import session as login_session
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Catagory, Item
 import random
@@ -31,6 +31,7 @@ def showLogin():
 def All_catalog():
     catalog= session.query(Catagory).all()
     catagory=[]
+    latest=session.query(Item).from_statement(text("SELECT * FROM Item ORDER BY Id ASC LIMIT 2")).all()
     latest=session.query(Item).order_by(Item.Id).limit(2)
     for i in catalog:
         cata_item={}
@@ -91,8 +92,12 @@ def Delete_catalog(catalog_id):
     if request.method == 'GET':
         return render_template('delete_catalog.html',catagory=catagory)
     else:
+        item=session.query(Item).filter_by(catagory_id=catalog_id).all()
         session.delete(catagory)
-        flash("Catagory deleted!")
+        if item:
+            for i in item:
+                session.delete(i)
+        flash("Catagory and its items deleted!")
         session.commit()
         return redirect(url_for('All_catalog'))
 

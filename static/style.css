@@ -57,8 +57,10 @@ a {
 }
 .latest_items {
 	width: 100%;
+	margin: auto;
 	display: flex;
 	flex-wrap: wrap;
+	border-bottom: solid 0.4px grey;
 }
 .center {
 	width: 40%;
@@ -68,7 +70,7 @@ a {
 }
 
 .catagory {
-	margin: auto;
+	margin: 10px auto;
 	width: 300px;
 }
 .item_left {

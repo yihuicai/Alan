@@ -22,6 +22,7 @@
 
 
     <div class="catagories top">
+    {% if latest: %}
     <div class="latest_items">
     {% for l in latest: %}
     	<div class="center">
@@ -30,13 +31,11 @@
         </div>
     {% endfor %}
     </div>
+    {% endif %}
 
 	{% for i in catalog %}
 	<div class="catagory">
 	    <h1 class="title">{{ i['name'] }}</h1>
-	    <a href="{{url_for('New_item', catalog_id = i['id'])}}">Add New item</a>
-	    <br/>
-	    <br/>
 	    <a href="{{url_for('Edit_catalog', catalog_id = i['id'])}}">edit</a>
 	    <a href="{{url_for('Delete_catalog', catalog_id = i['id'])}}">delete</a>
 	    <br/>
@@ -51,6 +50,12 @@
 
 	    <br/>
 	    {% endfor %}
+	    {% if not i['items'] %}
+	    <div class="title">
+	        <h5>The catagory is empty. Let's add some new items!</h5>
+	    </div>
+	    {% endif %}
+	    <a href="{{url_for('New_item', catalog_id = i['id'])}}">Add New item</a>
 	    <br/>
 	</div>
 	{% endfor %}
