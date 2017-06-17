@@ -25,6 +25,7 @@
 	<form action="{{url_for('Edit_catalog',catalog_id=catagory.Id)}}" method = 'POST'>
 	    <p>Name:</p>
 	    <input type='text' size='30' name='name' value ='{{catagory.name}}'>
+	    <br/>
 	    <input type='submit' value='Modify'>
 	    <a href="{{url_for('All_catalog')}} ">Cancel</a>
 	</form>

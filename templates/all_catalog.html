@@ -10,6 +10,15 @@
         <h4 class="logo">Alan's Catalog</h4>
 	    <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
         <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
+        <div class="right">
+            <img class="profile" src="{{status['profile']}}">
+            <p class="username"> USER: {{status['username']}}</p>
+            {% if status['username'] == 'guest' %}
+            <a class="username" href="{{ url_for('showLogin') }}">login</a>
+            {% else %}
+            <a class="username" href="{{ url_for('gdisconnect') }}">logout</a>
+            {% endif %}
+        </div>
 	</header>
 
 	{% with messages = get_flashed_messages() %}
@@ -39,7 +48,6 @@
 	    <a href="{{url_for('Edit_catalog', catalog_id = i['id'])}}">edit</a>
 	    <a href="{{url_for('Delete_catalog', catalog_id = i['id'])}}">delete</a>
 	    <br/>
-	    <br/>
 	  	{% for j in i['items'] %}
 	    <div class="items">
 	        <a href="{{url_for('Items', catalog_id = i['id'], item_id=j.Id)}}"><h3 class="item_name">
@@ -57,9 +65,10 @@
 	    {% endif %}
 	    <a href="{{url_for('New_item', catalog_id = i['id'])}}">Add New item</a>
 	    <br/>
+	    <br/>
+
 	</div>
 	{% endfor %}
-	<br/>
 	</div>
 
 </body>

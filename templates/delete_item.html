@@ -20,15 +20,13 @@
     {% endif %}
     {% endwith %}
 
-    <div class="top">
-	<h2 class="title">Are you sure to delete {{item.name}} ?</h2>
-	<div class="del">
-	    <form class="delete" action="{{url_for('Delete_item',catalog_id=catalog_id, item_id=item.Id)}}" method = 'POST'>
+    <div class="top delete center">
+		<h2 class="title">Are you sure to delete item {{item.name}} ?</h2>
+	    <form action="{{url_for('Delete_item',catalog_id=catalog_id, item_id=item.Id)}}" method = 'POST'>
 	        <input type='submit' value='Yes'>
 	    </form>
-    	<form class="delete" action="{{url_for('This_catalog', catalog_id=catalog_id)}}" method = 'GET'>
+    	<form action="{{url_for('This_catalog', catalog_id=catalog_id)}}" method = 'GET'>
 	        <input type='submit' value='No'>
     	</form>
-	</div>
 	</div>
 </body>

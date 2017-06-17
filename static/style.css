@@ -14,18 +14,15 @@ header {
 	background-color: black;
 	display: flex;
 	flex-wrap: wrap;
-}
-
-.flash{
-	color: red; 
-	position: relative; 
-	top: 64px;
-}
-.new {
-	margin:10px;
-	padding: 5px 0;
-	z-index: 2;
 	color: white;
+	font-weight: 300;
+}
+.username{
+	font-size: 1em;
+	text-align: left;
+	padding: 5px 10px;
+	margin: 10px 0;
+	width: 40%;
 }
 a {
 	text-decoration: none;
@@ -33,6 +30,27 @@ a {
 	font-weight: 300;
 	padding: 2px;
 	margin:5px;
+}
+.right{
+	margin: auto 10px auto auto;
+	width: 30%;
+	display: inline-flex;
+}
+.profile {
+	height: 2em;
+	padding: auto;
+	z-index: 2;
+	margin: auto 0;
+}
+.flash {
+	color: red; 
+	position: relative; 
+	top: 64px;
+}
+.new {
+	margin:10px 20px;
+	padding: 5px 0;
+	z-index: 2;
 }
 
 .logo {
@@ -63,8 +81,7 @@ a {
 	border-bottom: solid 0.4px grey;
 }
 .center {
-	width: 40%;
-	margin: 10px 50px;
+	margin: 10px auto;
 	text-align: center;
 	display: block;
 }
@@ -119,14 +136,15 @@ a {
 	margin: 10px;
 	padding: 5px;
 }
-.del {
-	margin: auto;
+
+.delete {
 	width: 50%;
 	display: flex;
 	flex-wrap: wrap;
-}
-.delete {
-	width: 50px;
 	text-align: center;
 	margin:auto;
+}
+
+input {
+	margin: 5px 20px;
 }
