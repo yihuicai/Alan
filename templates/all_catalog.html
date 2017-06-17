@@ -27,7 +27,7 @@
     {% for l in latest: %}
     	<div class="center">
             <p><a href="{{url_for('Items', catalog_id = l.catagory_id, item_id=l.Id)}}">{{l.name}}</a></p>
-            <img class="item_img demo" src="{{l.url_link}}">
+            <a href="{{url_for('Items', catalog_id = l.catagory_id, item_id=l.Id)}}"><img class="item_img demo" src="{{l.url_link}}"></a>
         </div>
     {% endfor %}
     </div>

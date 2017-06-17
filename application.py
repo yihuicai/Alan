@@ -31,8 +31,7 @@ def showLogin():
 def All_catalog():
     catalog= session.query(Catagory).all()
     catagory=[]
-    latest=session.query(Item).from_statement(text("SELECT * FROM Item ORDER BY Id ASC LIMIT 2")).all()
-    latest=session.query(Item).order_by(Item.Id).limit(2)
+    latest=session.query(Item).from_statement(text("SELECT * FROM Item ORDER BY Id DESC LIMIT 2")).all()
     for i in catalog:
         cata_item={}
         cata_item['id']=i.Id
