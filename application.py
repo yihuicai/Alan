@@ -1,3 +1,4 @@
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask import session as login_session
 from sqlalchemy import create_engine, text
@@ -24,6 +25,15 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 status={'username' : 'guest', 'profile' : 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'}
 
+def authentication(catalog_id, item_id):
+    def decorated(f):
+        if status['username']=='guest':
+            flash('Please login first')
+            return redirect(url_for('showLogin'))
+        else:
+            return f(catalog_id, item_id)
+    return decorated
+    
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.args.get('state') != login_session['state']:
@@ -106,7 +116,7 @@ def gconnect():
     flash("you are now logged in as %s" % login_session['username'])
     print "done!"
     return output
-    
+
 @app.route('/gdisconnect')
 def gdisconnect():
     
@@ -134,6 +144,7 @@ def gdisconnect():
     	del login_session['picture']
     	response = make_response(json.dumps('Successfully disconnected.'), 200)
     	response.headers['Content-Type'] = 'application/json'
+
     	return response
     else:
 	
@@ -153,7 +164,7 @@ def showLogin():
                     for x in xrange(32))
     login_session['state'] = state
     return render_template('login.html',state=state)
-
+    
 @app.route('/')
 @app.route('/catalog')
 def All_catalog():
@@ -168,7 +179,7 @@ def All_catalog():
         cata_item['items']=items
         catagory.append(cata_item)
     return render_template('all_catalog.html',catalog=catagory,latest=latest,status=status)
-    
+
 @app.route('/catalog/<int:catalog_id>')
 @app.route('/catalog/<int:catalog_id>/item')
 def This_catalog(catalog_id):
@@ -181,99 +192,121 @@ def This_catalog(catalog_id):
     cata_item['items']=items
     catagory.append(cata_item)
     return render_template('all_catalog.html',catalog=catagory,latest=[],status=status)
-    
+
 @app.route('/catalog/new', methods=['GET','POST'])
 def New_catalog():
-    if request.method == 'GET':
-        return render_template('new_catalog.html')
-    else:
-        if request.form['name']:
-            newCatagory=Catagory(name=request.form['name'])
-            session.add(newCatagory)
-            flash("New catagory created!")
-            session.commit()
-            return redirect(url_for('All_catalog'))
-        else:
-            flash("Please give a name for catagory")
+    @authentication(catalog_id=None, item_id=None)
+    def dec_newC(catalog_id, item_id):
+        if request.method == 'GET':
             return render_template('new_catalog.html')
+        else:
+            if request.form['name']:
+                newCatagory=Catagory(name=request.form['name'])
+                session.add(newCatagory)
+                flash("New catagory created!")
+                session.commit()
+                return redirect(url_for('All_catalog'))
+            else:
+                flash("Please give a name for catagory")
+                return render_template('new_catalog.html')
+    return dec_newC
+    
+
 
 @app.route('/catalog/<int:catalog_id>/edit', methods=['Get', 'Post'])
 def Edit_catalog(catalog_id):
-    catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
-    if request.method == 'GET':
-        return render_template('edit_catalog.html',catagory=catagory)
-    else:
-        if request.form['name']:
-            catagory.name=request.form['name']
-            session.add(catagory)
-            flash("Catagory modified!")
-            session.commit()
-            return redirect(url_for('This_catalog', catalog_id=catalog_id))
-        else:
-            flash("Please give a name to edit the catagory.")
+    @authentication(catalog_id, item_id=None)
+    def dec_editC(catalog_id, item_id):
+        catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
+        if request.method == 'GET':
             return render_template('edit_catalog.html',catagory=catagory)
+        else:
+            if request.form['name']:
+                catagory.name=request.form['name']
+                session.add(catagory)
+                flash("Catagory modified!")
+                session.commit()
+                return redirect(url_for('This_catalog', catalog_id=catalog_id))
+            else:
+                flash("Please give a name to edit the catagory.")
+                return render_template('edit_catalog.html',catagory=catagory)
     
+    return dec_editC
+
 @app.route('/catalog/<int:catalog_id>/delete', methods=['GET','POST'])
 def Delete_catalog(catalog_id):
-    catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
-    if request.method == 'GET':
-        return render_template('delete_catalog.html',catagory=catagory)
-    else:
-        item=session.query(Item).filter_by(catagory_id=catalog_id).all()
-        session.delete(catagory)
-        if item:
-            for i in item:
-                session.delete(i)
-        flash("Catagory and its items deleted!")
-        session.commit()
-        return redirect(url_for('All_catalog'))
+    @authentication(catalog_id, item_id=None)
+    def dec_deleteC(catalog_id, item_id):
+        catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
+        if request.method == 'GET':
+            return render_template('delete_catalog.html',catagory=catagory)
+        else:
+            item=session.query(Item).filter_by(catagory_id=catalog_id).all()
+            session.delete(catagory)
+            if item:
+                for i in item:
+                    session.delete(i)
+            flash("Catagory and its items deleted!")
+            session.commit()
+            return redirect(url_for('All_catalog'))
+    return dec_deleteC
 
-    
+
 @app.route('/catalog/<int:catalog_id>/item/new',  methods=['GET','POST'])
 def New_item(catalog_id):
-    if request.method == 'GET':
-        return render_template('new_item.html', catalog_id=catalog_id)
-    else:
-        if request.form['name']:
-            newItem=Item(name=request.form['name'], attribute=request.form['attribute'],
-            description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id)
-            session.add(newItem)
-            flash("An item has been created!")
-            session.commit()
-            return redirect(url_for('This_catalog', catalog_id=catalog_id))
+    @authentication(catalog_id, item_id=None)
+    def dec_newI(catalog_id, item_id):
+        if request.method == 'GET':
+            return render_template('new_item.html', catalog_id=catalog_id)
         else:
-            flash("Please give a name for item")
-            return redirect(url_for('All_catalog'))
-        
+            if request.form['name']:
+                newItem=Item(name=request.form['name'], attribute=request.form['attribute'],
+                description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id)
+                session.add(newItem)
+                flash("An item has been created!")
+                session.commit()
+                return redirect(url_for('This_catalog', catalog_id=catalog_id))
+            else:
+                flash("Please give a name for item")
+                return redirect(url_for('All_catalog'))
+    return dec_newI
+
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit',  methods=['GET','POST'])
 def Edit_item(catalog_id, item_id):
-    item=session.query(Item).filter_by(Id=item_id).one()
-    if request.method == 'GET':
-        return render_template('edit_item.html', catalog_id=catalog_id, item=item)
-    else:
-        if request.form['name']:
-            item.name=request.form['name']
-            item.attribute=request.form['attribute']
-            item.description=request.form['description']
-            item.url_link=request.form['url']
-            session.add(item)
-            flash("An item has been edited!")
-            session.commit()
-            return redirect(url_for('This_catalog', catalog_id=catalog_id))
-        else:
-            flash("Please give a name to the edited item.")
+    @authentication(catalog_id, item_id)
+    def dec_editI(catalog_id, item_id):
+        item=session.query(Item).filter_by(Id=item_id).one()
+        if request.method == 'GET':
             return render_template('edit_item.html', catalog_id=catalog_id, item=item)
+        else:
+            if request.form['name']:
+                item.name=request.form['name']
+                item.attribute=request.form['attribute']
+                item.description=request.form['description']
+                item.url_link=request.form['url']
+                session.add(item)
+                flash("An item has been edited!")
+                session.commit()
+                return redirect(url_for('This_catalog', catalog_id=catalog_id))
+            else:
+                flash("Please give a name to the edited item.")
+                return render_template('edit_item.html', catalog_id=catalog_id, item=item)
+    return dec_editI
             
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/delete',  methods=['GET','POST'])
 def Delete_item(catalog_id, item_id):
-    item=session.query(Item).filter_by(Id=item_id).one()
-    if request.method == 'GET':
-        return render_template('delete_item.html',catalog_id=catalog_id, item=item)
-    else:
-        session.delete(item)
-        flash("An item has been deleted!")
-        session.commit()
-        return redirect(url_for('This_catalog',catalog_id=catalog_id))
+    @authentication(catalog_id, item_id)
+    def dec_deleteI(catalog_id, item_id):
+        item=session.query(Item).filter_by(Id=item_id).one()
+        if request.method == 'GET':
+            return render_template('delete_item.html',catalog_id=catalog_id, item=item)
+        else:
+            session.delete(item)
+            flash("An item has been deleted!")
+            session.commit()
+            return redirect(url_for('This_catalog',catalog_id=catalog_id))
+    return dec_deleteI
+        
 if __name__=='__main__':
     app.secret_key='Alan\'s Key'
     app.debug = True

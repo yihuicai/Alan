@@ -13,6 +13,13 @@
 	    <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
         <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
 	</header>
+	{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+        <p class="flash">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
 	<div class="top">
 	    <div id="signinButton">
 	        <span class="g-signin"
