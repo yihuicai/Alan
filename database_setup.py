@@ -18,6 +18,13 @@ class Catagory(Base):
     Id=Column(Integer, primary_key = True)
     user_id=Column(Integer, ForeignKey('User.Id'))
     name=Column(String(50), nullable = False)
+    @property
+    def serialize(self):
+        return {
+        'name':self.name,
+        'Id':self.Id,
+        'user_id':self.user_id,
+        }
     
 class Item(Base):
     __tablename__='Item'
@@ -29,6 +36,17 @@ class Item(Base):
     catagory_id=Column(Integer, ForeignKey('Catagory.Id'))
     user_id=Column(Integer, ForeignKey('User.Id'))
     catagory=relationship(Catagory)
+    @property
+    def serialize(self):
+        return {
+        'name':self.name,
+        'Id':self.Id,
+        'attribute':self.attribute,
+        'description':self.description,
+        'url_link':self.url_link,
+        'catagory_id':self.catagory_id,
+        'user_id':self.user_id,
+        }
     
 engine=create_engine('sqlite:///catalog.db')
 Base.metadata.create_all(engine)

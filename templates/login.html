@@ -20,7 +20,9 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-	<div class="top">
+	<div class="top center">
+	    <div id="result">Please login through your Google Plus account</div>
+	    <br/>
 	    <div id="signinButton">
 	        <span class="g-signin"
                 data-scope="openid email"
@@ -32,7 +34,6 @@
                 data-approvalprompt="force">
             </span>
 	    </div>
-	    <div id="result">Hello success!</div>
 	</div>
 	<script>
 		function signInCallback(authResult) {

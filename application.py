@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask import session as login_session
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -166,15 +166,11 @@ def gdisconnect():
     	del login_session['username']
     	del login_session['email']
     	del login_session['picture']
-    	response = make_response(json.dumps('Successfully disconnected.'), 200)
-    	response.headers['Content-Type'] = 'application/json'
-
-    	return response
+    	response = 200#make_response(json.dumps('Successfully disconnected.'), 200)
     else:
 	
-    	response = make_response(json.dumps('Failed to revoke token for given user.', 400))
-    	response.headers['Content-Type'] = 'application/json'
-    	return response
+    	response = 400#make_response(json.dumps('Failed to revoke token for given user.', 400))
+    return render_template("logout.html", response = response)
 
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>')
 def Items(catalog_id, item_id):
@@ -332,6 +328,16 @@ def Delete_item(catalog_id, item_id):
             session.commit()
             return redirect(url_for('This_catalog',catalog_id=catalog_id))
     return dec_deleteI
+    
+@app.route('/catalog/<int:catalog_id>/item/JSON')
+def catalogJSON(catalog_id, item_id=None):
+    items= session.query(Item).filter_by(catagory_id=catalog_id).all()
+    return jsonify(Item=[i.serialize for i in items])
+
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/JSON')
+def itemJSON(catalog_id, item_id):
+    item = session.query(Item).filter_by(Id=item_id).one()
+    return jsonify(Item=item.serialize)
         
 if __name__=='__main__':
     app.secret_key='Alan\'s Key'

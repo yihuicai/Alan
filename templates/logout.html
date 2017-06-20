@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<head>
+	<title>Alan's Item Catalog</title>
+	<meta charset="UTF-8">
+	<link href="https://fonts.googleapis.com/css?family=Lato:100,200,300,400" rel="stylesheet">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+	<script src="https://apis.google.com/js/client:platform.js?onload=start" asyc defer></script>
+	<link href="{{ url_for('static', filename='style.css') }}"  rel="stylesheet" type="text/css">
+</head>
+<body>
+    <header>
+        <h4 class="logo">Alan's Catalog</h4>
+	    <a class="new" href="{{url_for('All_catalog')}}">All Catagory</a>
+        <a class="new" href="{{url_for('New_catalog')}}">Add new catagory</a>
+	</header>
+	{% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+        <p class="flash">{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+	<div class="top center">
+    {% if response == 200 %}
+	    <div id="result">Successfully logged out.</div>
+    {% elif response == 400 %}
+        <div id="result">Failed to revoke token for given user.</div>
+    {% else %}
+        <div id="result">Unknown error.</div>
+    {% endif%}
+	</div>
+    <script src='https://code.jquery.com/jquery-3.1.0.min.js'></script>
+	<script>
+		function Callback() {
+            setTimeout(function(){
+            window.location.href="/catalog";
+            }, 2000);
+        }
+        $(document).ready(Callback);
+	</script>
