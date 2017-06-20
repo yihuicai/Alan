@@ -45,6 +45,7 @@
 	{% for i in catalog %}
 	<div class="catagory">
 	    <h1 class="title">{{ i['name'] }}</h1>
+
 	    <a href="{{url_for('Edit_catalog', catalog_id = i['id'])}}">edit</a>
 	    <a href="{{url_for('Delete_catalog', catalog_id = i['id'])}}">delete</a>
 	    <br/>

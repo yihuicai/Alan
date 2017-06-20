@@ -1,9 +1,8 @@
-from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask import session as login_session
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Catagory, Item
+from database_setup import Base, Catagory, Item, User
 
 #for authentication
 from oauth2client.client import flow_from_clientsecrets
@@ -23,7 +22,18 @@ Base.metadata.bind=engine
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
-status={'username' : 'guest', 'profile' : 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'}
+status={'username' : 'guest', 'profile' : 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg', 'id' : -1}
+
+def reg(username, profile, email):
+    try:
+        u=session.query(User).filter_by(email=email).one()
+    except: 
+        newuser=User(name=username, email=email, profile=profile)
+        session.add(newuser)
+        session.commit()
+        u=session.query(User).filter_by(email=email).one()
+    return u.Id
+
 
 def authentication(catalog_id, item_id):
     def decorated(f):
@@ -31,9 +41,19 @@ def authentication(catalog_id, item_id):
             flash('Please login first')
             return redirect(url_for('showLogin'))
         else:
-            return f(catalog_id, item_id)
+            if catalog_id:
+                cata=session.query(Catagory).filter_by(Id=catalog_id).one()
+                if status['id']== cata.user_id:
+                    return f(status['id'], catalog_id, item_id)
+                else:
+                    flash('User not permitted to this action')
+                    return redirect(url_for('All_catalog'))
+            else: 
+                return f(status['id'], catalog_id, item_id)
+            
+            
     return decorated
-    
+
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.args.get('state') != login_session['state']:
@@ -53,7 +73,7 @@ def gconnect():
         return response
         # Check that the access token is valid.
     access_token = credentials.access_token
-    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'% access_token)
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'%access_token)
     h = httplib2.Http()
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort.
@@ -81,8 +101,7 @@ def gconnect():
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_credentials is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(json.dumps('Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -102,9 +121,13 @@ def gconnect():
     login_session['email'] = data['email']
     login_session['access_token'] = credentials.access_token
     login_session['gplus_id']=gplus_id
-    
+
+
+    email = data['email']
     status['username'] = data['name']
     status['profile'] = data['picture']
+    status['id'] = reg(status['username'], status['profile'], email)
+    
 
     output = ''
     output += '<h1>Welcome, '
@@ -129,13 +152,14 @@ def gdisconnect():
     	response = make_response(json.dumps('Current user not connected.'), 401)
     	response.headers['Content-Type'] = 'application/json'
     	return response
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s'%login_session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
     print result
     status['username']='guest'
     status['profile']='http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
+    status['id']=-1
     if result['status'] == '200':
 	del login_session['access_token'] 
     	del login_session['gplus_id']
@@ -156,10 +180,13 @@ def gdisconnect():
 def Items(catalog_id, item_id):
     item=session.query(Item).filter_by(Id=item_id).one()
     catalog=session.query(Catagory).filter_by(Id=catalog_id).one()
-    return render_template('Item.html', item=item, catalog=catalog)
+    return render_template('item.html', item=item, catalog=catalog)
 
 @app.route('/login')
 def showLogin():
+    if not status['username']=='guest':
+            flash('User already login, please logout first.')
+            return redirect(url_for('All_catalog'))
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
@@ -175,10 +202,11 @@ def All_catalog():
         cata_item={}
         cata_item['id']=i.Id
         cata_item['name']=i.name
+        cata_item['user_id']=i.user_id
         items= session.query(Item).filter_by(catagory_id=i.Id).all()
         cata_item['items']=items
         catagory.append(cata_item)
-    return render_template('all_catalog.html',catalog=catagory,latest=latest,status=status)
+    return render_template('all_catalog.html',catalog=catagory,latest=latest,status=status,)
 
 @app.route('/catalog/<int:catalog_id>')
 @app.route('/catalog/<int:catalog_id>/item')
@@ -188,6 +216,7 @@ def This_catalog(catalog_id):
     cata_item={}
     cata_item['id']=catalog.Id
     cata_item['name']=catalog.name
+    cata_item['user_id']=catalog.user_id
     items=session.query(Item).filter_by(catagory_id=catalog.Id).all()
     cata_item['items']=items
     catagory.append(cata_item)
@@ -196,12 +225,12 @@ def This_catalog(catalog_id):
 @app.route('/catalog/new', methods=['GET','POST'])
 def New_catalog():
     @authentication(catalog_id=None, item_id=None)
-    def dec_newC(catalog_id, item_id):
+    def dec_newC(user_id, catalog_id, item_id):
         if request.method == 'GET':
             return render_template('new_catalog.html')
         else:
             if request.form['name']:
-                newCatagory=Catagory(name=request.form['name'])
+                newCatagory=Catagory(name=request.form['name'], user_id=user_id)
                 session.add(newCatagory)
                 flash("New catagory created!")
                 session.commit()
@@ -211,12 +240,10 @@ def New_catalog():
                 return render_template('new_catalog.html')
     return dec_newC
     
-
-
 @app.route('/catalog/<int:catalog_id>/edit', methods=['Get', 'Post'])
 def Edit_catalog(catalog_id):
     @authentication(catalog_id, item_id=None)
-    def dec_editC(catalog_id, item_id):
+    def dec_editC(user_id, catalog_id, item_id):
         catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
         if request.method == 'GET':
             return render_template('edit_catalog.html',catagory=catagory)
@@ -236,7 +263,7 @@ def Edit_catalog(catalog_id):
 @app.route('/catalog/<int:catalog_id>/delete', methods=['GET','POST'])
 def Delete_catalog(catalog_id):
     @authentication(catalog_id, item_id=None)
-    def dec_deleteC(catalog_id, item_id):
+    def dec_deleteC(user_id, catalog_id, item_id):
         catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
         if request.method == 'GET':
             return render_template('delete_catalog.html',catagory=catagory)
@@ -251,17 +278,16 @@ def Delete_catalog(catalog_id):
             return redirect(url_for('All_catalog'))
     return dec_deleteC
 
-
 @app.route('/catalog/<int:catalog_id>/item/new',  methods=['GET','POST'])
 def New_item(catalog_id):
     @authentication(catalog_id, item_id=None)
-    def dec_newI(catalog_id, item_id):
+    def dec_newI(user_id, catalog_id, item_id):
         if request.method == 'GET':
             return render_template('new_item.html', catalog_id=catalog_id)
         else:
             if request.form['name']:
                 newItem=Item(name=request.form['name'], attribute=request.form['attribute'],
-                description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id)
+                description=request.form['description'], url_link=request.form['url'], catagory_id=catalog_id, user_id=user_id)
                 session.add(newItem)
                 flash("An item has been created!")
                 session.commit()
@@ -274,7 +300,7 @@ def New_item(catalog_id):
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/edit',  methods=['GET','POST'])
 def Edit_item(catalog_id, item_id):
     @authentication(catalog_id, item_id)
-    def dec_editI(catalog_id, item_id):
+    def dec_editI(user_id, catalog_id, item_id):
         item=session.query(Item).filter_by(Id=item_id).one()
         if request.method == 'GET':
             return render_template('edit_item.html', catalog_id=catalog_id, item=item)
@@ -296,7 +322,7 @@ def Edit_item(catalog_id, item_id):
 @app.route('/catalog/<int:catalog_id>/item/<int:item_id>/delete',  methods=['GET','POST'])
 def Delete_item(catalog_id, item_id):
     @authentication(catalog_id, item_id)
-    def dec_deleteI(catalog_id, item_id):
+    def dec_deleteI(user_id, catalog_id, item_id):
         item=session.query(Item).filter_by(Id=item_id).one()
         if request.method == 'GET':
             return render_template('delete_item.html',catalog_id=catalog_id, item=item)
