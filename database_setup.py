@@ -18,6 +18,7 @@ class Catagory(Base):
     Id=Column(Integer, primary_key = True)
     user_id=Column(Integer, ForeignKey('User.Id'))
     name=Column(String(50), nullable = False)
+    item=relationship("Item", cascade="save-update, delete")
     @property
     def serialize(self):
         return {
@@ -35,7 +36,6 @@ class Item(Base):
     url_link=Column(String(200), nullable = True)
     catagory_id=Column(Integer, ForeignKey('Catagory.Id'))
     user_id=Column(Integer, ForeignKey('User.Id'))
-    catagory=relationship(Catagory)
     @property
     def serialize(self):
         return {
