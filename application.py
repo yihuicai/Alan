@@ -26,9 +26,9 @@ session_factory = sessionmaker(bind=engine)
 DBSession = scoped_session(session_factory)
 session = DBSession()
 
-status={'username': 'guest',
-        'profile': 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg',
-        'id': -1}
+login_session['username'] = 'guest'
+login_session['picture'] = 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
+login_session['gplus_id'] = -1
 
 def remove_session():
     DBSession.remove()
@@ -58,20 +58,20 @@ def authentication(catalog_id, item_id):
     This decoration function implements authentication in each of the handler functions.
     """
     def decorated(f):
-        if status['username'] == 'guest':
+        if login_session['username'] == 'guest':
             flash('Please login first')
             remove_session()
             return redirect(url_for('showLogin'))
         else:
             if catalog_id:
                 cata=session.query(Catagory).filter_by(Id = catalog_id).one()
-                if status['id'] == cata.user_id:
-                    return f(status['id'], catalog_id, item_id)
+                if login_session['gplus_id'] == cata.user_id:
+                    return f(login_session['gplus_id'], catalog_id, item_id)
                 else:
                     flash('User not permitted to this action')
                     return redirect(url_for('All_catalog'))
             else: 
-                return f(status['id'], catalog_id, item_id)
+                return f(login_session['gplus_id'], catalog_id, item_id)
     return decorated
 
 @app.route('/gconnect', methods=['POST'])
@@ -83,7 +83,6 @@ def gconnect():
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter'), 401)
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
     code = request.data
     try:
@@ -95,7 +94,6 @@ def gconnect():
         response = make_response(
             json.dumps('Failed to upgrade the authorization code.'), 401)
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
         # Check that the access token is valid.
     access_token = credentials.access_token
@@ -106,7 +104,6 @@ def gconnect():
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
 
     # Verify that the access token is used for the intended user.
@@ -115,7 +112,6 @@ def gconnect():
         response = make_response(
             json.dumps("Token's user ID doesn't match given user ID."), 401)
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
 
     # Verify that the access token is valid for this app.
@@ -124,15 +120,13 @@ def gconnect():
             json.dumps("Token's client ID does not match app's."), 401)
         print "Token's client ID does not match app's."
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
 
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
-    if stored_credentials is not None and gplus_id == stored_gplus_id:
+    if (stored_credentials != 'guest') and (gplus_id == stored_gplus_id):
         response = make_response(json.dumps('Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
-        remove_session()
         return response
 
     # Store the access token in the session for later use.
@@ -152,9 +146,9 @@ def gconnect():
     login_session['gplus_id'] = gplus_id
 
     email = data['email']
-    status['username'] = data['name']
-    status['profile'] = data['picture']
-    status['id'] = reg(status['username'], status['profile'], email)
+    #status['username'] = data['name']
+    #status['profile'] = data['picture']
+    #status['id'] = reg(status['username'], status['profile'], email)
 
     output = ''
     output += '<h1>Welcome, '
@@ -178,7 +172,7 @@ def gdisconnect():
     """
     if request.method=="POST":
         return "error! please DO NOT use POST"
-    if login_session  is None:
+    if login_session is None:
         return redirect(url_for('All_catalog.html'))
     access_token = login_session['access_token']
     print 'In gdisconnect access token is %s'%access_token
@@ -194,15 +188,12 @@ def gdisconnect():
     result = h.request(url, 'GET')[0]
     print 'result is '
     print result
-    status['username'] = 'guest'
-    status['profile']='http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
-    status['id'] = -1
     if result['status'] == '200':
 	del login_session['access_token'] 
-    	del login_session['gplus_id']
-    	del login_session['username']
+    	login_session['gplus_id'] = -1
+    	login_session['username'] = 'guest'
     	del login_session['email']
-    	del login_session['picture']
+    	login_session['picture'] = 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
     	response = 200
     else:	
     	response = 400
@@ -228,7 +219,7 @@ def showLogin():
     This function renders a template that let the user login 
     and use state to prevent other people's attacking.
     """
-    if not status['username'] == 'guest':
+    if not login_session['username'] == 'guest':
         flash('User already login, please logout first.')
         return redirect(url_for('All_catalog'))
     state = ''.join(random.choice(string.ascii_uppercase + string.digits) 
@@ -259,7 +250,7 @@ def All_catalog():
         catagory.append(cata_item)
     remove_session()
     return render_template('all_catalog.html', 
-    catalog=catagory, latest=latest, status=status)
+    catalog=catagory, latest=latest, status=login_session)
 
 
 @app.route('/catalog/<int:catalog_id>')
@@ -279,7 +270,7 @@ def This_catalog(catalog_id):
     catagory.append(cata_item)
     remove_session()
     return render_template('all_catalog.html', 
-    catalog=catagory, latest=[], status=status)
+    catalog=catagory, latest=[], status=login_session)
 
 
 @app.route('/catalog/new', methods=['GET','POST'])
