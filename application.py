@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask import session as login_session
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from database_setup import Base, Catagory, Item, User
 
 # for authentication
@@ -15,17 +15,24 @@ import requests
 import random
 import string
 
-CLIENT_ID = json.loads(open('client_secrets.json',
+CLIENT_ID = json.loads(open('/var/www/fullstack/Alan/client_secrets.json',
                             'r').read())['web']['client_id']
 app = Flask(__name__)
-engine = create_engine('sqlite:///catalog.db')
+app.secret_key='Alan\'s Key'
+engine = create_engine('postgresql://alan:catalog@localhost/catagory2')
 Base.metadata.bind = engine
 
-DBSession = sessionmaker(bind=engine)
+session_factory = sessionmaker(bind=engine)
+DBSession = scoped_session(session_factory)
 session = DBSession()
-status={'username': 'guest', 
+
+status={'username': 'guest',
         'profile': 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg',
         'id': -1}
+
+def remove_session():
+    DBSession.remove()
+    return
 
 
 def reg(username, profile, email):
@@ -42,6 +49,7 @@ def reg(username, profile, email):
         session.add(newuser)
         session.commit()
         u = session.query(User).filter_by(email = email).one()
+    remove_session()
     return u.Id
 
 
@@ -52,6 +60,7 @@ def authentication(catalog_id, item_id):
     def decorated(f):
         if status['username'] == 'guest':
             flash('Please login first')
+            remove_session()
             return redirect(url_for('showLogin'))
         else:
             if catalog_id:
@@ -74,17 +83,19 @@ def gconnect():
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter'), 401)
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
     code = request.data
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('/var/www/fullstack/Alan/client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
         response = make_response(
             json.dumps('Failed to upgrade the authorization code.'), 401)
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
         # Check that the access token is valid.
     access_token = credentials.access_token
@@ -95,6 +106,7 @@ def gconnect():
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
 
     # Verify that the access token is used for the intended user.
@@ -103,6 +115,7 @@ def gconnect():
         response = make_response(
             json.dumps("Token's user ID doesn't match given user ID."), 401)
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
 
     # Verify that the access token is valid for this app.
@@ -111,6 +124,7 @@ def gconnect():
             json.dumps("Token's client ID does not match app's."), 401)
         print "Token's client ID does not match app's."
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
 
     stored_credentials = login_session.get('credentials')
@@ -118,22 +132,23 @@ def gconnect():
     if stored_credentials is not None and gplus_id == stored_gplus_id:
         response = make_response(json.dumps('Current user is already connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
+        remove_session()
         return response
 
     # Store the access token in the session for later use.
-    login_session['credentials'] = credentials
+    login_session['credentials'] = credentials.to_json()
     login_session['gplus_id'] = gplus_id
 
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
-    params = {'access_token': credentials.access_token,
+    params = {'access_token': access_token,
               'alt': 'json'}
     answer = requests.get(userinfo_url, params=params)
     data = answer.json()
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
-    login_session['access_token'] = credentials.access_token
+    login_session['access_token'] = access_token
     login_session['gplus_id'] = gplus_id
 
     email = data['email']
@@ -160,17 +175,21 @@ def gconnect():
 def gdisconnect():
     """
     This function is used to logout from the server and Google Plus authentication
-    """    
+    """
+    if request.method=="POST":
+        return "error! please DO NOT use POST"
+    if login_session  is None:
+        return redirect(url_for('All_catalog.html'))
     access_token = login_session['access_token']
-    print 'In gdisconnect access token is %s', access_token
+    print 'In gdisconnect access token is %s'%access_token
     print 'User name is: ' 
-    print login_session['username']
+    #print login_session['username']
     if access_token is None:
         print 'Access Token is None'
     	response = make_response(json.dumps('Current user not connected.'), 401)
     	response.headers['Content-Type'] = 'application/json'
     	return response
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s'%login_session['access_token']
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s'%access_token
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
@@ -187,6 +206,7 @@ def gdisconnect():
     	response = 200
     else:	
     	response = 400
+    remove_session()
     return render_template("logout.html", response = response)
 
 
@@ -197,6 +217,7 @@ def Items(catalog_id, item_id):
     """
     item = session.query(Item).filter_by(Id=item_id).one()
     catalog = session.query(Catagory).filter_by(Id=catalog_id).one()
+    remove_session()
     return render_template('item.html',
     item=item, catalog=catalog)
 
@@ -213,6 +234,7 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits) 
                     for x in xrange(32))
     login_session['state'] = state
+    remove_session()
     return render_template('login.html', state=state)
 
 
@@ -226,7 +248,7 @@ def All_catalog():
     catalog = session.query(Catagory).all()
     catagory = []
     latest = session.query(Item).from_statement(
-    text("SELECT * FROM Item ORDER BY Id DESC LIMIT 2")).all()
+    text('SELECT * FROM "Item" ORDER BY "Item"."Id" DESC LIMIT 2')).all()
     for i in catalog:
         cata_item={}
         cata_item['id']=i.Id
@@ -235,6 +257,7 @@ def All_catalog():
         items= session.query(Item).filter_by(catagory_id=i.Id).all()
         cata_item['items']=items
         catagory.append(cata_item)
+    remove_session()
     return render_template('all_catalog.html', 
     catalog=catagory, latest=latest, status=status)
 
@@ -254,6 +277,7 @@ def This_catalog(catalog_id):
     items = session.query(Item).filter_by(catagory_id=catalog.Id).all()
     cata_item['items'] = items
     catagory.append(cata_item)
+    remove_session()
     return render_template('all_catalog.html', 
     catalog=catagory, latest=[], status=status)
 
@@ -266,6 +290,7 @@ def New_catalog():
     @authentication(catalog_id=None, item_id=None)
     def dec_newC(user_id, catalog_id, item_id):
         if request.method == 'GET':
+            remove_session()
             return render_template('new_catalog.html')
         else:
             if request.form['name']:
@@ -273,9 +298,11 @@ def New_catalog():
                 session.add(newCatagory)
                 flash("New catagory created!")
                 session.commit()
+                remove_session()
                 return redirect(url_for('All_catalog'))
             else:
                 flash("Please give a name for catagory")
+                remove_session()
                 return render_template('new_catalog.html')
     return dec_newC
 
@@ -289,6 +316,7 @@ def Edit_catalog(catalog_id):
     def dec_editC(user_id, catalog_id, item_id):
         catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
         if request.method == 'GET':
+            remove_session()
             return render_template('edit_catalog.html', catagory=catagory)
         else:
             if request.form['name']:
@@ -296,9 +324,11 @@ def Edit_catalog(catalog_id):
                 session.add(catagory)
                 flash("Catagory modified!")
                 session.commit()
+                remove_session()
                 return redirect(url_for('This_catalog', catalog_id=catalog_id))
             else:
                 flash("Please give a name to edit the catagory.")
+                remove_session()
                 return render_template('edit_catalog.html', catagory=catagory)
     return dec_editC
 
@@ -312,15 +342,14 @@ def Delete_catalog(catalog_id):
     def dec_deleteC(user_id, catalog_id, item_id):
         catagory=session.query(Catagory).filter_by(Id=catalog_id).one()
         if request.method == 'GET':
+            remove_session()
             return render_template('delete_catalog.html', catagory=catagory)
         else:
             item = session.query(Item).filter_by(catagory_id=catalog_id).all()
             session.delete(catagory)
-            if item:
-                for i in item:
-                    session.delete(i)
             flash("Catagory and its items deleted!")
             session.commit()
+            remove_session()
             return redirect(url_for('All_catalog'))
     return dec_deleteC
 
@@ -333,6 +362,7 @@ def New_item(catalog_id):
     @authentication(catalog_id, item_id=None)
     def dec_newI(user_id, catalog_id, item_id):
         if request.method == 'GET':
+            remove_session()
             return render_template('new_item.html', catalog_id=catalog_id)
         else:
             if request.form['name']:
@@ -344,9 +374,11 @@ def New_item(catalog_id):
                 session.add(newItem)
                 flash("An item has been created!")
                 session.commit()
+                remove_session()
                 return redirect(url_for('This_catalog', catalog_id=catalog_id))
             else:
                 flash("Please give a name for item")
+                remove_session()
                 return redirect(url_for('All_catalog'))
     return dec_newI
 
@@ -360,6 +392,7 @@ def Edit_item(catalog_id, item_id):
     def dec_editI(user_id, catalog_id, item_id):
         item=session.query(Item).filter_by(Id=item_id).one()
         if request.method == 'GET':
+            remove_session()
             return render_template('edit_item.html', catalog_id=catalog_id, item=item)
         else:
             if request.form['name']:
@@ -370,9 +403,11 @@ def Edit_item(catalog_id, item_id):
                 session.add(item)
                 flash("An item has been edited!")
                 session.commit()
+                remove_session()
                 return redirect(url_for('This_catalog', catalog_id=catalog_id))
             else:
                 flash("Please give a name to the edited item.")
+                remove_session()
                 return render_template('edit_item.html', catalog_id=catalog_id, item=item)
     return dec_editI
 
@@ -386,11 +421,13 @@ def Delete_item(catalog_id, item_id):
     def dec_deleteI(user_id, catalog_id, item_id):
         item=session.query(Item).filter_by(Id=item_id).one()
         if request.method == 'GET':
+            remove_session()
             return render_template('delete_item.html', catalog_id=catalog_id, item=item)
         else:
             session.delete(item)
             flash("An item has been deleted!")
             session.commit()
+            remove_session()
             return redirect(url_for('This_catalog', catalog_id=catalog_id))
     return dec_deleteI
 
@@ -401,6 +438,7 @@ def catalogJSON(catalog_id, item_id=None):
     Handler to implement JSON endpoint for all items in a catagory.
     """
     items = session.query(Item).filter_by(catagory_id=catalog_id).all()
+    remove_session()
     return jsonify(Item=[i.serialize for i in items])
 
 
@@ -410,10 +448,10 @@ def itemJSON(catalog_id, item_id):
     Handler to implement JSON endpoint for one sigle item in a catagory.
     """
     item = session.query(Item).filter_by(Id=item_id).one()
+    remove_session()
     return jsonify(Item=item.serialize)
-        
+
 
 if __name__=='__main__':
-    app.secret_key='Alan\'s Key'
     app.debug = True
-    app.run(host='0.0.0.0', port=8080)
+    app.run()
