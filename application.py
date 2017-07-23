@@ -26,14 +26,17 @@ session_factory = sessionmaker(bind=engine)
 DBSession = scoped_session(session_factory)
 session = DBSession()
 
-login_session['username'] = 'guest'
-login_session['picture'] = 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
-login_session['gplus_id'] = -1
+def create_Session():
+    if login_session.get('username') is None:
+    	login_session['username'] = 'guest'
+    	login_session['picture'] = 'http://megaconorlando.com/wp-content/uploads/guess-who.jpg'
+    	login_session['gplus_id'] = -1
+        login_session['user_id'] = -1
+    return
 
 def remove_session():
     DBSession.remove()
     return
-
 
 def reg(username, profile, email):
     """
@@ -58,20 +61,22 @@ def authentication(catalog_id, item_id):
     This decoration function implements authentication in each of the handler functions.
     """
     def decorated(f):
+        create_Session()
         if login_session['username'] == 'guest':
             flash('Please login first')
             remove_session()
             return redirect(url_for('showLogin'))
         else:
+            usr_id = login_session['user_id']
             if catalog_id:
                 cata=session.query(Catagory).filter_by(Id = catalog_id).one()
-                if login_session['gplus_id'] == cata.user_id:
-                    return f(login_session['gplus_id'], catalog_id, item_id)
+                if usr_id == cata.user_id:
+                    return f(usr_id, catalog_id, item_id)
                 else:
                     flash('User not permitted to this action')
                     return redirect(url_for('All_catalog'))
             else: 
-                return f(login_session['gplus_id'], catalog_id, item_id)
+                return f(usr_id, catalog_id, item_id)
     return decorated
 
 @app.route('/gconnect', methods=['POST'])
@@ -148,7 +153,7 @@ def gconnect():
     email = data['email']
     #status['username'] = data['name']
     #status['profile'] = data['picture']
-    #status['id'] = reg(status['username'], status['profile'], email)
+    login_session['user_id'] = reg(login_session['username'], login_session['picture'], email)
 
     output = ''
     output += '<h1>Welcome, '
@@ -171,9 +176,11 @@ def gdisconnect():
     This function is used to logout from the server and Google Plus authentication
     """
     if request.method=="POST":
-        return "error! please DO NOT use POST"
-    if login_session is None:
-        return redirect(url_for('All_catalog.html'))
+        flash("error! please DO NOT use POST")
+        return redirect(url_for('All_catalog'))
+    if login_session.get('username') == 'guest':
+        flash("No user to logout")
+        return redirect(url_for('All_catalog'))
     access_token = login_session['access_token']
     print 'In gdisconnect access token is %s'%access_token
     print 'User name is: ' 
@@ -197,7 +204,6 @@ def gdisconnect():
     	response = 200
     else:	
     	response = 400
-    remove_session()
     return render_template("logout.html", response = response)
 
 
@@ -206,6 +212,7 @@ def Items(catalog_id, item_id):
     """
     This function implements item queries and renders a HTML template for response
     """
+    create_Session()
     item = session.query(Item).filter_by(Id=item_id).one()
     catalog = session.query(Catagory).filter_by(Id=catalog_id).one()
     remove_session()
@@ -236,6 +243,7 @@ def All_catalog():
     The main page of all catagory from a user.
     It reads from database the catagories and items.
     """
+    create_Session()
     catalog = session.query(Catagory).all()
     catagory = []
     latest = session.query(Item).from_statement(
@@ -259,6 +267,7 @@ def This_catalog(catalog_id):
     """
     Handler to display one specific catagory.
     """
+    create_Session()
     catagory = []
     catalog = session.query(Catagory).filter_by(Id=catalog_id).one()
     cata_item = {}
