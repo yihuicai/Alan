@@ -1,10 +1,8 @@
 ## 					  Item Catalog
 
-------
-
 #### **Summary:**
 
-- This is a simple catalog item for specific *google plus* users. Any improvements is welcomed. ​:smile:​
+- This is a simple catalog item for specific *google plus* users. Any improvements are welcomed. ​:smile:​
 - ​You can browse all the items and categories of this catalog. You can use this catalog to store items(or other things that has a name) to different categories of your own. However, note that the categories you created **can be accessed by all people** ( and of course, me Alan, the author :blush: ).
 - You also can obtain the XML and JSON format of single category or item. 
 - The project utilizes Flask and SQLAlchemy for request handling and database administration.
