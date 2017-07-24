@@ -11,6 +11,7 @@ import httplib2
 import json
 
 from flask import make_response, flash, jsonify
+from dicttoxml import dicttoxml
 import requests
 import random
 import string
@@ -431,6 +432,23 @@ def Delete_item(catalog_id, item_id):
             return redirect(url_for('This_catalog', catalog_id=catalog_id))
     return dec_deleteI
 
+@app.route('/catalog/<int:catalog_id>/item/XML')
+def catalogXML(catalog_id, item_id=None):
+    """
+    Handler to implement XML endpoint
+    """
+    items = session.query(Item).filter_by(catagory_id=catalog_id).all()
+    remove_session()
+    return dicttoxml([item.serialize for item in items])
+
+@app.route('/catalog/<int:catalog_id>/item/<int:item_id>/XML')
+def itemXML(catalog_id, item_id):
+    """
+    Handler to implement JSON endpoint for one sigle item in a catagory.
+    """
+    item = session.query(Item).filter_by(Id=item_id).one()
+    remove_session()
+    return dicttoxml(item.serialize)
         
 @app.route('/catalog/<int:catalog_id>/item/JSON')
 def catalogJSON(catalog_id, item_id=None):
