@@ -12,6 +12,8 @@ header {
 	z-index: 2;
 	overflow-y: auto;
 	background-color: black;
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
 	display: flex;
 	flex-wrap: wrap;
 	color: white;
@@ -34,7 +36,10 @@ a {
 .right{
 	margin: auto 10px auto auto;
 	width: 30%;
-	display: inline-flex;
+	display: flex;
+	flex-wrap: wrap;
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
 }
 .profile {
 	height: 2em;
@@ -63,6 +68,8 @@ a {
 	border: solid 2px white;
 }
 .catagories {
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
 	display: flex;
 	flex-wrap: wrap;
 	width:100%;
@@ -70,12 +77,16 @@ a {
 .top {
 	position: relative;
 	top:64px;
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
 	display: flex;
 	flex-wrap: wrap;
 }
 .latest_items {
 	width: 100%;
 	margin: auto;
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
 	display: flex;
 	flex-wrap: wrap;
 	border-bottom: solid 0.4px grey;
@@ -139,7 +150,9 @@ a {
 
 .delete {
 	width: 50%;
-	display: flex;
+	display: -webkit-flex;
+    -webkit-flex-wrap: wrap;
+    display: flex;
 	flex-wrap: wrap;
 	text-align: center;
 	margin:auto;
